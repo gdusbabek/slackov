@@ -7,3 +7,5 @@
 // for each user, rebuild markov database
 // push databases
 // update state
+
+console.log(process.argv);
