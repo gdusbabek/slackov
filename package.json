@@ -16,12 +16,14 @@
     "debug": "~2.1.1",
     "express": "^4.11.2",
     "jade": "~1.9.1",
-    "markov": "0.0.7",
     "minimist": "1.1.1",
     "morgan": "~1.5.1",
     "request": "2.53.0",
     "serve-favicon": "~2.2.0",
     "aws-sdk" : "2.1.26",
-    "cool-ascii-faces": "~1.3.x"
+    "cool-ascii-faces": "~1.3.x",
+    "deck": ">=0.0.3",
+    "lazy": ">=1.0.3",
+    "hashish": ">=0.0.2"
   }
 }

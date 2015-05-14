@@ -113,55 +113,54 @@ SlackApi.prototype.getUsers = function getUsers(callback) {
 
 // from now back until oldest.
 // return array of {user, ts, txt}  (user name, timestamp and message text).
-SlackApi.prototype.getMessages = function getMessages(channel, from, callback) {
+SlackApi.prototype.getMessages = function getMessages(channel, from, maxMessages, callback) {
   var self = this,
     msgs = [],
     keepPaging = true,
-    newest = undefined,
-    maxInNextBatch = undefined,
+    newest = 1,
     oldest = from;
   
   async.whilst(
-    function test() { return keepPaging; },
+    function test() { return keepPaging && msgs.length < maxMessages; },
     function(callback) {
       var params = {
           token: self.token,
           channel: channel,
           oldest: oldest,
           inclusive: 0,
-          count: 500
+          count: Math.min(maxMessages, 500)
         },
         url;
-      
-      if (maxInNextBatch !== undefined) {
-        params.latest = maxInNextBatch;
-      }
       
       url = 'https://slack.com/api/channels.history' + helpers.expand(params);
       
       //console.log(new Date(oldest * 1000) + ' ' + url);
-      //console.log(url);
+      //console.log('CALLING ' + url);
       
       self.getJson(url, function(err, body) {
+        //console.log("RESPONS " + url);
         if (err) {
           callback(err);
         } else {
           var response = JSON.parse(body);
           if (response.hasOwnProperty('ok') && response.ok) {
+            // sort message array in descending order.
+            response.messages.sort(function(a, b) {
+              return parseFloat(a.ts) - parseFloat(b.ts);
+            });
             response.messages.forEach(function(msg) {
-              if (msg.hasOwnProperty('user')) {
+              if (msg.hasOwnProperty('user') && msgs.length < maxMessages) {
                 msgs.push({
                   user: msg.user,
-                  ts: msg.ts,
+                  ts: parseFloat(msg.ts),
                   txt: msg.hasOwnProperty('text') ? msg.text : ''
                 });
                 
-                newest = Math.max(newest === undefined ? 0 : newest, msg.ts);
-                maxInNextBatch = Math.min(maxInNextBatch === undefined ? msg.ts : maxInNextBatch, msg.ts);
+                newest = Math.max(newest, parseFloat(msg.ts));
               }
             });
             //console.log(new Date(maxInNextBatch * 1000));
-            keepPaging = response.hasOwnProperty('has_more') && response.has_more;
+            keepPaging = response.hasOwnProperty('has_more') && response.has_more && msgs.length < maxMessages;
             callback(null);
           } else {
             callback(new Error(response.error));
